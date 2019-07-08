@@ -37,8 +37,8 @@ def create_recipe_page(html):
         if div.get('class'):
             if 'ingredients' in div['class'][0] or \
                'instructions' in div['class'][0]:
-                for content in div.contents:
-                    with open('recipe.html', 'a+') as f:
+                with open('recipe.html', 'a+') as f:
+                    for content in div.contents:
                         f.write(str(content))
 
 
