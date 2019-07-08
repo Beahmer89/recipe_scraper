@@ -8,11 +8,12 @@ It is a CLI tool that when given a URL will generate a html page with JUST the r
 ### Commandline opetions
 
 | command | Description |
-| ----------- |: -------------------------------:|
+| ----------- |:-_------------------------------:|
 | -u or --url | URL containing the recipe needed |
 
 ### Example Usage
 ```bash
 python recipe_scraper.py -u https://minimalistbaker.com/1-bowl-pumpkin-cake-vegan-gf/
+
 open recipe.html
 ```
