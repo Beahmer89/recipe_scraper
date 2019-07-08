@@ -3,6 +3,11 @@
 This project eliminates the business of blog posts or web pages when all you want is a recipe.
 It is a CLI tool that when given a URL will generate a html page with JUST the recipe.
 
+## Setup
+```bash
+pip install -r requires/installation.txt -i https://pypi.org/simple
+```
+
 ## How to use
 
 ### Commandline opetions
