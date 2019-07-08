@@ -8,7 +8,7 @@ It is a CLI tool that when given a URL will generate a html page with JUST the r
 ### Commandline opetions
 
 | command | Description |
-| ----------- |:-_------------------------------:|
+| ----------- |:--------------------------------:|
 | -u or --url | URL containing the recipe needed |
 
 ### Example Usage
