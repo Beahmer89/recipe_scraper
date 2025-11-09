@@ -1,24 +1,30 @@
 # recipe_scraper
 
 This project eliminates the business of blog posts or web pages when all you want is a recipe.
-It is a CLI tool that when given a URL will generate a html page with JUST the recipe.
+Currently it is using Streamlit for FE and is an actual app to:
+- store recipes you like by generating a simplied recipe
+- view all your recipes
 
 ## Setup
 ```bash
-pip install -r requires/installation.txt -i https://pypi.org/simple
+uv venv
+source .venv/bin/activate
+uv sync --dev
 ```
 
 ## How to use
-
-### Commandline opetions
-
-| command | Description |
-| ----------- |:--------------------------------:|
-| -u or --url | URL containing the recipe needed |
-
-### Example Usage
+### Step 1
+Setup DB by running:
 ```bash
-python recipe_scraper.py -u https://minimalistbaker.com/1-bowl-pumpkin-cake-vegan-gf/
-
-open recipe.html
+python db_setup.py
 ```
+
+### Step 2
+Run the application by:
+```bash
+streamlit run app.py
+```
+
+### Step 3
+Then navigate to homepage by going to url:
+- http://localhost:8501/
