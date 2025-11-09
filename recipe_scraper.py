@@ -1,52 +1,54 @@
-import argparse
 import logging
 
-from bs4 import BeautifulSoup
-import requests
+from bs4 import BeautifulSoup, NavigableString
+import httpx
 
-
+UNWANTED_TAGS = {"h3", "script", "style", "button"}  # tags to skip entirely
 LOGGER = logging.getLogger()
-logging.basicConfig(level='INFO')
-
-
-def get_args():
-    parser = argparse.ArgumentParser(description='Read from specified file '
-                                     'and update Mongo if present and data is '
-                                     'different')
-    parser.add_argument('-u', '--url', required=True, help='URL of recipe')
-    return parser.parse_args()
+logging.basicConfig(level="INFO")
 
 
 def get_recipe(url):
-    LOGGER.info('Getting recipe')
+    LOGGER.info("Getting recipe")
     try:
-        response = requests.get(url)
-    except (requests.exceptions.HTTPError, requests.exceptions.MissingSchema,
-            requests.exceptions.ConnectionError):
-        LOGGER.error('INVALID URL: %s', url)
-        return ''
+        with httpx.Client() as client:
+            response = client.get(url)
+            response.raise_for_status
+    except (httpx.HTTPStatusError, httpx.RequestError, httpx.ConnectError):
+        LOGGER.error("INVALID URL: %s", url)
+        return ""
 
     return response.text
 
 
-def create_recipe_page(html):
-    LOGGER.info('Trying to construct new recipe page')
-    soup = BeautifulSoup(html, 'html.parser')
+def create_recipe_page(html, url):
+    recipe = list()
+    soup = BeautifulSoup(html, "html.parser")
+    title = soup.find_all("title")
+    LOGGER.info(f"TITLES FOUND: {len(title)}")
+    new_title = str(title[0]).replace("title", "h1")
+    recipe.append(str(new_title))
 
-    for div in soup.find_all('div'):
-        if div.get('class'):
-            if 'ingredients' in div['class'][0] or \
-               'instructions' in div['class'][0]:
-                with open('recipe.html', 'a+') as f:
-                    for content in div.contents:
-                        f.write(str(content))
+    # Find Image
+    og_image = soup.find("meta", property="og:image")
+    if og_image and og_image.get("content"):
+        image = og_image["content"]
 
+    for div in soup.find_all("div"):
+        if div.get("class"):
+            if "ingredients" in div["class"][0] or "instructions" in div["class"][0]:
+                for content in div.contents:
+                    if isinstance(content, NavigableString):
+                        continue
+                    if content.find_all("button"):
+                        LOGGER.info("button")
+                        continue
+                    if content.name in UNWANTED_TAGS:
+                        continue
+                    recipe.append(str(content))
 
-def main():
-    args = get_args()
-    html = get_recipe(args.url)
-    create_recipe_page(html)
+    simplified_recipe = " ".join(recipe)
+    bold_title = new_title.replace("h1", "b")
 
-
-if __name__ == "__main__":
-    main()
+    # return values to insert INTO DATABASE
+    return [bold_title, image, url, simplified_recipe]
