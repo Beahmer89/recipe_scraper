@@ -13,6 +13,7 @@ def get_recipes():
     result = [
         {
             "id": int(fetch_result["id"][i]),
+            "url": str(fetch_result["url"][i]),
             "title": str(fetch_result["title"][i]),
             "image": str(fetch_result["image"][i]),
             "html": str(fetch_result["recipe_html"][i]),

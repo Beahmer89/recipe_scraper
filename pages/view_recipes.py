@@ -22,9 +22,6 @@ streamlit.markdown(
     text-align: center;
     font-weight: 600;
 }
-.clear-button-container button {
-    margin-top: 1000px;
-}
 </style>
 """,
     unsafe_allow_html=True,
@@ -43,23 +40,26 @@ search_col, type_col, clear_col = streamlit.columns([2, 1, 2])
 if "search_query" not in streamlit.session_state:
     streamlit.session_state.search_query = ""
 
+
 def clear_search():
     # Safe way to reset the text input
     streamlit.session_state.search_query = ""
 
+
 with search_col:
-    search_query = streamlit.text_input(
-        "🔍 Search by recipe name",
-        key="search_query",
-    ).strip().lower()
+    search_query = (
+        streamlit.text_input("Search by recipe name", key="search_query", icon="🔍")
+        .strip()
+        .lower()
+    )
 
 with type_col:
     all_types = sorted({search_type.get("type", "Unknown") for search_type in content})
     selected_type = streamlit.selectbox("Filter by type", ["All"] + all_types)
 
 with clear_col:
-    streamlit.markdown('<div class="clear-button-container">', unsafe_allow_html=True)
-    streamlit.button("❌ Clear", on_click=clear_search)
+    streamlit.text("")
+    streamlit.button("Clear Search", on_click=clear_search, icon="❌")
 
 # --- Filter recipes ---
 filtered_recipes = content
@@ -89,22 +89,42 @@ for i in range(0, len(filtered_recipes), columns_per_row):
                 f"<div class='card-title'>{recipe['title']}</div>",
                 unsafe_allow_html=True,
             )
-            _, center, _ = streamlit.columns([2, 2, 2])
-            with center:
+            left, _, right = streamlit.columns([2, 1.5, 2])
+            with left:
                 if streamlit.button(
-                    "👀 Preview", key=f"preview_{recipe['id']}", type="primary"
+                    label="Preview",
+                    help="View minimal recipe/ingredients without going to new page",
+                    key=f"preview_{recipe['id']}",
+                    type="primary",
+                    icon="👀",
                 ):
                     streamlit.session_state.dialog_id = recipe["id"]
+
+            with right:
+                streamlit.link_button(
+                    label="Details",
+                    help="Support recipe owner or view original recipe",
+                    url=recipe["url"],
+                    icon="📝",
+                )
+
 
 # --- Modal preview ---
 def close_modal():
     streamlit.session_state.dialog_id = None
 
+
 if streamlit.session_state.dialog_id:
     selected = next(
-        (r for r in content if r["id"] == streamlit.session_state.dialog_id), None
+        (
+            recipe
+            for recipe in content
+            if recipe["id"] == streamlit.session_state.dialog_id
+        ),
+        None,
     )
     if selected:
+
         @streamlit.dialog("Preview")
         def show_preview():
             styled_html = f"""
@@ -115,8 +135,18 @@ if streamlit.session_state.dialog_id:
             </body>
             """
             streamlit.components.v1.html(styled_html, height=300, scrolling=True)
-            streamlit.button("Close", on_click=close_modal)
-            if not streamlit.session_state['dialog_id']:
+            left_column, _, right_column = streamlit.columns([1, 2, 1])
+            with left_column:
+                streamlit.button("Close", on_click=close_modal)
+
+            with right_column:
+                streamlit.link_button(
+                    label="Details",
+                    help="Support recipe owner or view original recipe",
+                    url=recipe["url"],
+                    icon="📝",
+                )
+            if not streamlit.session_state["dialog_id"]:
                 streamlit.rerun()
 
         show_preview()

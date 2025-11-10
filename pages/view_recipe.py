@@ -9,6 +9,14 @@ if recipe_id:
     content = fake_db.get_recipe_by_id(recipe_id)
     recipe_html = content["recipe_html"][0]
 
+    _, center_column, _ = streamlit.columns([2, 2, 2])
+    with center_column:
+        streamlit.link_button(
+            label="View Original Recipe",
+            help="Support recipe owner or view original recipe",
+            url=content["url"][0],
+            icon="📝",
+        )
     # Wrap the recipe HTML in a styled container
     styled_html = f"""
     <html>
