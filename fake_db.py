@@ -39,3 +39,13 @@ def insert_recipe(data: list):
     CONNECTION.execute(
         "INSERT INTO recipes (title, image, url, recipe_html) VALUES(?, ?, ?, ?)", data
     )
+
+
+def delete_recipe_by_id(recipe_id: int):
+    fetch_result = CONNECTION.execute(
+        """DELETE FROM recipes
+        WHERE id = ?;""",
+        [recipe_id],
+    ).fetchnumpy()
+
+    return fetch_result

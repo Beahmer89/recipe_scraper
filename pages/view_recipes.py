@@ -4,6 +4,14 @@ import fake_db
 
 streamlit.title("View Recipes")
 
+# --- Initialize session state ---
+# options state
+streamlit.session_state.setdefault("open_options_id", None)
+# preview modal
+streamlit.session_state.setdefault("dialog_id", None)
+# search recipes
+streamlit.session_state.setdefault("search_query", "")
+
 # --- Styling Classes ---
 streamlit.markdown(
     """
@@ -30,15 +38,8 @@ streamlit.markdown(
 # --- Load all recipes ---
 content = fake_db.get_recipes()
 
-# for modal stuff
-if "dialog_id" not in streamlit.session_state:
-    streamlit.session_state.dialog_id = ""
-
 # --- Search and filter controls ---
 search_col, type_col, clear_col = streamlit.columns([2, 1, 2])
-
-if "search_query" not in streamlit.session_state:
-    streamlit.session_state.search_query = ""
 
 
 def clear_search():
@@ -89,8 +90,8 @@ for i in range(0, len(filtered_recipes), columns_per_row):
                 f"<div class='card-title'>{recipe['title']}</div>",
                 unsafe_allow_html=True,
             )
-            left, _, right = streamlit.columns([2, 1.5, 2])
-            with left:
+            button_left, button_right = streamlit.columns([2, 1])
+            with button_left:
                 if streamlit.button(
                     label="Preview",
                     help="View minimal recipe/ingredients without going to new page",
@@ -100,13 +101,33 @@ for i in range(0, len(filtered_recipes), columns_per_row):
                 ):
                     streamlit.session_state.dialog_id = recipe["id"]
 
-            with right:
-                streamlit.link_button(
-                    label="Details",
-                    help="Support recipe owner or view original recipe",
-                    url=recipe["url"],
-                    icon="📝",
-                )
+            with button_right:
+                panel_column, button_column = streamlit.columns([1, 1])
+                with button_column:
+                    if streamlit.button(label="...", key=f"menu_{recipe['id']}"):
+                        if streamlit.session_state.open_options_id == recipe["id"]:
+                            streamlit.session_state.open_options_id = None
+                        else:
+                            streamlit.session_state.open_options_id = recipe["id"]
+
+                # Show buttons inline if this recipe’s options are open
+                with panel_column:
+                    if streamlit.session_state.open_options_id == recipe["id"]:
+                        streamlit.button(
+                            "",
+                            help="Delete Item",
+                            key=f"modal_delete_{recipe['id']}",
+                            on_click=lambda recipe_id=recipe[
+                                "id"
+                            ]: fake_db.delete_recipe_by_id(recipe_id),
+                            icon="❌",
+                        )
+                        streamlit.link_button(
+                            label="",
+                            help="View original recipe",
+                            url=recipe["url"],
+                            icon="📝",
+                        )
 
 
 # --- Modal preview ---
@@ -125,7 +146,7 @@ if streamlit.session_state.dialog_id:
     )
     if selected:
 
-        @streamlit.dialog("Preview")
+        @streamlit.dialog("Preview", dismissible=True, on_dismiss=close_modal)
         def show_preview():
             styled_html = f"""
             <body style="background-color:white; color:#111; font-family: Arial, sans-serif; padding: 1rem;">
