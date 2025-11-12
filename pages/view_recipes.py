@@ -83,7 +83,7 @@ for i in range(0, len(filtered_recipes), columns_per_row):
             card(
                 title="",
                 text="",
-                url=f"/view_recipe?recipe_id={recipe['id']}",
+                url=f"/cook_mode?recipe_id={recipe['id']}",
                 image=recipe["image"],
             )
             streamlit.markdown(
