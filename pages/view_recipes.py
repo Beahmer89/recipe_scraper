@@ -6,7 +6,7 @@ streamlit.title("View Recipes")
 
 # --- Pagination ---
 streamlit.session_state.setdefault("current_page", 0)
-RECIPES_PER_PAGE = 5  # or whatever number of cards you want per page
+RECIPES_PER_PAGE = 20
 
 # --- Initialize session state ---
 # options state
