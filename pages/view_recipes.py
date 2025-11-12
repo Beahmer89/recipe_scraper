@@ -4,6 +4,10 @@ import fake_db
 
 streamlit.title("View Recipes")
 
+# --- Pagination ---
+streamlit.session_state.setdefault("current_page", 0)
+RECIPES_PER_PAGE = 5  # or whatever number of cards you want per page
+
 # --- Initialize session state ---
 # options state
 streamlit.session_state.setdefault("open_options_id", None)
@@ -35,8 +39,19 @@ streamlit.markdown(
     unsafe_allow_html=True,
 )
 
-# --- Load all recipes ---
-content = fake_db.get_recipes()
+# --- Load all recipes if a search otherwise just do paginated---
+if streamlit.session_state["search_query"]:
+    content = fake_db.get_recipes()
+    total = len(content)
+else:
+    offset = streamlit.session_state["current_page"] * RECIPES_PER_PAGE
+    content = fake_db.get_recipes_paginated(RECIPES_PER_PAGE, offset)
+    total = fake_db.get_recipe_total()
+
+# use recipes per page +1 to allow for limit of recipes to show 1 page
+# example total = 5 and per page = 5 +1 gives you 0. Then +1 shows you are
+# still on page 1 until the next recipe is added so you dont go to a blank page
+total_pages = int(total / (RECIPES_PER_PAGE + 1)) + 1
 
 # --- Search and filter controls ---
 search_col, type_col, clear_col = streamlit.columns([2, 1, 2])
@@ -75,6 +90,8 @@ if streamlit.session_state["search_query"]:
         streamlit.info("No recipes match your search.")
         streamlit.stop()
 
+
+# --- Loop through recipes after filtering ---
 columns_per_row = 2
 for i in range(0, len(filtered_recipes), columns_per_row):
     cols = streamlit.columns(columns_per_row)
@@ -171,3 +188,24 @@ if streamlit.session_state.dialog_id:
                 streamlit.rerun()
 
         show_preview()
+
+# --- Navigation for Pagination ---
+prev_col, page_col, next_col = streamlit.columns([1, 2, 1])
+
+with prev_col:
+    if streamlit.button("⬅️ Previous"):
+        if streamlit.session_state["current_page"] > 0:
+            streamlit.session_state["current_page"] -= 1
+            streamlit.rerun()
+
+with page_col:
+    streamlit.markdown(
+        f"Page {streamlit.session_state['current_page'] + 1} of {total_pages}",
+        unsafe_allow_html=True,
+    )
+
+with next_col:
+    if streamlit.button("➡️ Next"):
+        if streamlit.session_state["current_page"] + 1 < total_pages:
+            streamlit.session_state["current_page"] += 1
+            streamlit.rerun()
