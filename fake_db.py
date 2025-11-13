@@ -24,7 +24,7 @@ def get_recipes():
     return result
 
 
-def get_recipes_paginated(limit, offset):
+def get_recipes_paginated(limit: int, offset: int):
     fetch_result = CONNECTION.execute(
         """SELECT id, title, image, url, recipe_html
         FROM recipes
@@ -66,7 +66,8 @@ def get_recipe_by_id(recipe_id: int):
     return fetch_result
 
 
-def insert_recipe(data: list):
+def insert_recipe(recipe: dict):
+    data = [recipe["title"], recipe["image"], recipe["url"], recipe["recipe"]]
     CONNECTION.execute(
         "INSERT INTO recipes (title, image, url, recipe_html) VALUES(?, ?, ?, ?)", data
     )
