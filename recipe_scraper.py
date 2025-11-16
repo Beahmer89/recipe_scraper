@@ -1,15 +1,18 @@
 import logging
+import json
 
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
 import httpx
 
-UNWANTED_TAGS = {"h3", "script", "style", "button"}  # tags to skip entirely
+import jinja_helper
+
+
 LOGGER = logging.getLogger()
 logging.basicConfig(level="INFO")
 
 
 def get_recipe(url: str) -> str:
-    LOGGER.info("Getting recipe")
+    LOGGER.info("Getting recipe: {url}")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -27,41 +30,83 @@ def get_recipe(url: str) -> str:
 
 
 def create_recipe_page(html: str, url: str) -> dict:
-    recipe = list()
     image = ""
     soup = BeautifulSoup(html, "html.parser")
     title = soup.find_all("title")
     LOGGER.info(f"TITLES FOUND: {len(title)}")
     new_title = str(title[0]).replace("title", "h1")
+    bold_title = new_title.replace("h1", "b")
 
     # Find Image
     og_image = soup.find("meta", property="og:image")
     if og_image and og_image.get("content"):
         image = og_image["content"]
 
-    for div in soup.find_all("div"):
-        LOGGER.info(div.get("class"))
-        if div.get("class"):
-            if "ingredients" in div["class"][0] or "instructions" in div["class"][0]:
-                for content in div.contents:
-                    if isinstance(content, NavigableString):
-                        continue
-                    if content.find_all("button"):
-                        continue
-                    if content.name in UNWANTED_TAGS:
-                        continue
-                    recipe.append(str(content))
+    # Find Script that seems to have all recipe info
+    json_script = soup.find_all("script", type="application/ld+json")
+    if (
+        not json_script
+        or hasattr(json_script, "contents")
+        or not json_script[0].contents
+    ):
+        LOGGER.error(f"Could not locate script with recipe info for {url}")
+        return {}
 
-    LOGGER.info(f"Recipe Elements: {len(recipe)}")
-    if recipe:
-        simplified_recipe = " ".join(recipe)
-        bold_title = new_title.replace("h1", "b")
-        return {
-            "title": bold_title,
-            "image": image,
-            "url": url,
-            "recipe": simplified_recipe,
-        }
+    script_info = json.loads(json_script[0].contents[0])
+    LOGGER.info(f"LENGTH OF {type(script_info)} SCRIPT: {len(script_info)}")
 
-    LOGGER.error(f"No Recipe found for {url}")
-    return {}
+    if isinstance(script_info, list):
+        recipe_details = script_info[0]
+    else:
+        # @graph is a list dict: [{}] and other times its just a dict
+        if script_info.get("@graph"):
+            recipe_section = [
+                element
+                for element in script_info["@graph"]
+                if element.get("recipeIngredient")
+            ]
+            recipe_details = recipe_section[0] if recipe_section else {}
+        else:
+            recipe_details = script_info
+
+    # Get Recipe elements
+    ingredients = recipe_details.get("recipeIngredient", [])
+    instructions = recipe_details.get("recipeInstructions", [])
+    total_time = recipe_details.get("totalTime", "n/a")
+    if isinstance(total_time, dict):
+        total_time = total_time.get("minValue", "n/a")
+    total_time = total_time.split("PT")
+
+    LOGGER.info(f"TIME for {url}: {total_time}")
+    total_time = total_time[1] if len(total_time) == 2 else total_time[0]
+    LOGGER.info(f"INGREDIENTS for {url}: {len(ingredients)}")
+    LOGGER.info(f"INSTRUCTIONS for {url}: {len(instructions)}")
+
+    if not instructions or not ingredients:
+        LOGGER.error("Did not find instructions or ingredients")
+        return {}
+
+    if instructions[0].get("itemListElement"):
+        # This happens on some sites where there are different sections in the
+        # instructions. This needs some work as it will only grab the first set
+        instructions = instructions[0]["itemListElement"]
+
+    instructions = [
+        instruction["text"]
+        for instruction in instructions
+        if isinstance(instruction, dict) and instruction.get("text")
+    ]
+
+    simplified_recipe = jinja_helper.create_simplified_recipe(
+        title=new_title,
+        ingredients=ingredients,
+        instructions=instructions,
+        total_time=total_time,
+    )
+
+    return {
+        "title": bold_title,
+        "image": image,
+        "url": url,
+        "recipe": simplified_recipe,
+    }
