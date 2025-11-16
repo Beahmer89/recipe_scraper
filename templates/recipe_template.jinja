@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ title }}</title>
+</head>
+<body>
+    {{title}}
+    <h2>Cook Time</h2>
+    <ul id="cooking_info">
+        <li><strong>Total Time:</strong> {{ total_time }}</li>
+    </ul>
+
+    <h2>Ingredients</h2>
+    <ul id="ingredients">
+    {% for ingredient in ingredients %}
+        <li>{{ ingredient }}</li>
+    {% endfor %}
+    </ul>
+
+    <h2>Instructions</h2>
+    <ul id="instructions">
+    {% for instruction in instructions %}
+        <li>{{ instruction }}</li>
+    {% endfor %}
+    </ul>
+
+    {# a comment #}
+</body>
+</html>
