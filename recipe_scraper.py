@@ -86,21 +86,19 @@ def create_recipe_page(html: str, url: str) -> dict:
         LOGGER.error("Did not find instructions or ingredients")
         return {}
 
-    if instructions[0].get("itemListElement"):
-        # This happens on some sites where there are different sections in the
-        # instructions. This needs some work as it will only grab the first set
-        instructions = instructions[0]["itemListElement"]
-
-    instructions = [
-        instruction["text"]
-        for instruction in instructions
-        if isinstance(instruction, dict) and instruction.get("text")
-    ]
+    instruction_steps = []
+    for instruction in instructions:
+        if instruction.get("text"):
+            instruction_steps.append(instruction["text"])
+        if instruction.get("itemListElement"):
+            for list_element in instruction["itemListElement"]:
+                if list_element.get("text"):
+                    instruction_steps.append(list_element["text"])
 
     simplified_recipe = jinja_helper.create_simplified_recipe(
         title=new_title,
         ingredients=ingredients,
-        instructions=instructions,
+        instructions=instruction_steps,
         total_time=total_time,
     )
 
