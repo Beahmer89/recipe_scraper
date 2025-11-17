@@ -73,6 +73,15 @@ def insert_recipe(recipe: dict):
     )
 
 
+def update_recipe_by_id(recipe_id: int, recipe_html):
+    CONNECTION.execute(
+        """UPDATE recipes
+        SET recipe_html = ?
+        WHERE id = ?;""",
+        [recipe_html, recipe_id],
+    )
+
+
 def delete_recipe_by_id(recipe_id: int):
     fetch_result = CONNECTION.execute(
         """DELETE FROM recipes

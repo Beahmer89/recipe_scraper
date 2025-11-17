@@ -1,6 +1,7 @@
 import streamlit
 from streamlit_extras.card import card
 import fake_db
+import recipe_helper
 
 streamlit.title("View Recipes")
 
@@ -62,6 +63,14 @@ def clear_search():
     streamlit.session_state.search_query = ""
 
 
+def regenerate(recipe_id):
+    try:
+        recipe_helper.regenerate_recipe(recipe_id)
+        streamlit.toast("Recipe regenerated successfully!")
+    except Exception:
+        streamlit.toast("Recipe DID NOT regenerate successfully!")
+
+
 with search_col:
     search_query = (
         streamlit.text_input("Search by recipe name", key="search_query", icon="🔍")
@@ -117,6 +126,14 @@ for i in range(0, len(filtered_recipes), columns_per_row):
                     icon="👀",
                 ):
                     streamlit.session_state.dialog_id = recipe["id"]
+                streamlit.button(
+                    label="Regenerate",
+                    help="Save new copy of recipe",
+                    key=f"regenerate_{recipe['id']}",
+                    type="secondary",
+                    on_click=lambda recipe_id=recipe["id"]: regenerate(recipe_id),
+                    icon="🔄",
+                )
 
             with button_right:
                 panel_column, button_column = streamlit.columns([1, 1])
