@@ -12,7 +12,6 @@ logging.basicConfig(level="INFO")
 
 
 def get_recipe(url: str) -> str:
-    LOGGER.info("Getting recipe: {url}")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -27,6 +26,40 @@ def get_recipe(url: str) -> str:
         return ""
 
     return response.text
+
+
+def search_recipe(script_info, url):
+    recipe_details = {}
+    if isinstance(script_info, list):
+        LOGGER.info("Found a LIST")
+        recipe_details = script_info[0]
+    else:
+        # @graph is a list dict: [{}] and other times its just a dict
+        if script_info.get("@graph"):
+            recipe_section = [
+                element
+                for element in script_info["@graph"]
+                if element.get("recipeIngredient")
+            ]
+            recipe_details = recipe_section[0] if recipe_section else {}
+        else:
+            LOGGER.info("JUST A DICT")
+            recipe_details = script_info
+
+    # Get Recipe elements
+    ingredients = recipe_details.get("recipeIngredient", [])
+    instructions = recipe_details.get("recipeInstructions", [])
+    total_time = recipe_details.get("totalTime", "n/a")
+    if isinstance(total_time, dict):
+        total_time = total_time.get("minValue", "n/a")
+    total_time = total_time.split("PT")
+
+    LOGGER.info(f"TIME for {url}: {total_time}")
+    total_time = total_time[1] if len(total_time) == 2 else total_time[0]
+    LOGGER.info(f"INGREDIENTS for {url}: {len(ingredients)}")
+    LOGGER.info(f"INSTRUCTIONS for {url}: {len(instructions)}")
+
+    return ingredients, instructions, total_time
 
 
 def create_recipe_page(html: str, url: str) -> dict:
@@ -52,35 +85,13 @@ def create_recipe_page(html: str, url: str) -> dict:
         LOGGER.error(f"Could not locate script with recipe info for {url}")
         return {}
 
-    script_info = json.loads(json_script[0].contents[0])
-    LOGGER.info(f"LENGTH OF {type(script_info)} SCRIPT: {len(script_info)}")
-
-    if isinstance(script_info, list):
-        recipe_details = script_info[0]
-    else:
-        # @graph is a list dict: [{}] and other times its just a dict
-        if script_info.get("@graph"):
-            recipe_section = [
-                element
-                for element in script_info["@graph"]
-                if element.get("recipeIngredient")
-            ]
-            recipe_details = recipe_section[0] if recipe_section else {}
-        else:
-            recipe_details = script_info
-
-    # Get Recipe elements
-    ingredients = recipe_details.get("recipeIngredient", [])
-    instructions = recipe_details.get("recipeInstructions", [])
-    total_time = recipe_details.get("totalTime", "n/a")
-    if isinstance(total_time, dict):
-        total_time = total_time.get("minValue", "n/a")
-    total_time = total_time.split("PT")
-
-    LOGGER.info(f"TIME for {url}: {total_time}")
-    total_time = total_time[1] if len(total_time) == 2 else total_time[0]
-    LOGGER.info(f"INGREDIENTS for {url}: {len(ingredients)}")
-    LOGGER.info(f"INSTRUCTIONS for {url}: {len(instructions)}")
+    LOGGER.info(f"LENGTH OF {type(json_script)} SCRIPT before json: {len(json_script)}")
+    for script in json_script:
+        LOGGER.info(
+            "#########################################################################"
+        )
+        script = json.loads(script.contents[0])
+        ingredients, instructions, total_time = search_recipe(script, url)
 
     if not instructions or not ingredients:
         LOGGER.error("Did not find instructions or ingredients")
