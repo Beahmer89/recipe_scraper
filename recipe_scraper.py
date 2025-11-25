@@ -65,10 +65,8 @@ def search_recipe(script_info, url):
 def create_recipe_page(html: str, url: str) -> dict:
     image = ""
     soup = BeautifulSoup(html, "html.parser")
-    title = soup.find_all("title")
-    LOGGER.info(f"TITLES FOUND: {len(title)}")
-    new_title = str(title[0]).replace("title", "h1")
-    bold_title = new_title.replace("h1", "b")
+    title = soup.find("title").get_text(strip=True)
+    LOGGER.info(f"TITLE: {title}")
 
     # Find Image
     og_image = soup.find("meta", property="og:image")
@@ -107,14 +105,14 @@ def create_recipe_page(html: str, url: str) -> dict:
                     instruction_steps.append(list_element["text"])
 
     simplified_recipe = jinja_helper.create_simplified_recipe(
-        title=new_title,
+        title=title,
         ingredients=ingredients,
         instructions=instruction_steps,
         total_time=total_time,
     )
 
     return {
-        "title": bold_title,
+        "title": title,
         "image": image,
         "url": url,
         "recipe": simplified_recipe,
