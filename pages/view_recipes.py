@@ -1,7 +1,13 @@
+import logging
+
 import streamlit
 from streamlit_extras.card import card
+
 import fake_db
 import recipe_helper
+
+LOGGER = logging.getLogger()
+logging.basicConfig(level="INFO")
 
 streamlit.title("View Recipes")
 
@@ -16,6 +22,8 @@ streamlit.session_state.setdefault("open_options_id", None)
 streamlit.session_state.setdefault("dialog_id", None)
 # search recipes
 streamlit.session_state.setdefault("search_query", "")
+# meal planning
+streamlit.session_state.setdefault("meal_plan_staging", [])
 
 # --- Styling Classes ---
 streamlit.markdown(
@@ -40,6 +48,29 @@ streamlit.markdown(
     unsafe_allow_html=True,
 )
 
+# --- Define Button Functions ---
+def clear_search():
+    # Reset the text input
+    streamlit.session_state.search_query = ""
+
+
+def regenerate(recipe_id):
+    try:
+        recipe_helper.regenerate_recipe(recipe_id)
+        streamlit.toast("Recipe regenerated successfully!")
+    except Exception:
+        LOGGER.exception("Regeneration Error")
+        streamlit.toast("Recipe DID NOT regenerate successfully!")
+
+
+def add_to_meal_plan(recipe):
+    if recipe not in streamlit.session_state["meal_plan_staging"]:
+        streamlit.session_state["meal_plan_staging"].append(recipe)
+        streamlit.toast(f"Added '{recipe['title']}' to meal planner!")
+    else:
+        streamlit.toast(f"'{recipe['title']}' is already in your meal plan.")
+
+
 # --- Load all recipes if a search otherwise just do paginated---
 if streamlit.session_state["search_query"]:
     content = fake_db.get_recipes()
@@ -56,19 +87,6 @@ total_pages = int(total / (RECIPES_PER_PAGE + 1)) + 1
 
 # --- Search and filter controls ---
 search_col, type_col, clear_col = streamlit.columns([2, 1, 2])
-
-
-def clear_search():
-    # Safe way to reset the text input
-    streamlit.session_state.search_query = ""
-
-
-def regenerate(recipe_id):
-    try:
-        recipe_helper.regenerate_recipe(recipe_id)
-        streamlit.toast("Recipe regenerated successfully!")
-    except Exception:
-        streamlit.toast("Recipe DID NOT regenerate successfully!")
 
 
 with search_col:
@@ -133,6 +151,14 @@ for i in range(0, len(filtered_recipes), columns_per_row):
                     type="secondary",
                     on_click=lambda recipe_id=recipe["id"]: regenerate(recipe_id),
                     icon="🔄",
+                )
+                streamlit.button(
+                    label="Add to Meal Plan",
+                    help="Add this recipe to your meal planning staging area",
+                    key=f"meal_plan_{recipe['id']}",
+                    type="secondary",
+                    on_click=lambda recipe=recipe: add_to_meal_plan(recipe),
+                    icon="📅"
                 )
 
             with button_right:
@@ -213,6 +239,7 @@ with prev_col:
     if streamlit.button("⬅️ Previous"):
         if streamlit.session_state["current_page"] > 0:
             streamlit.session_state["current_page"] -= 1
+            streamlit.session_state.scroll_top = True
             streamlit.rerun()
 
 with page_col:
@@ -225,4 +252,5 @@ with next_col:
     if streamlit.button("➡️ Next"):
         if streamlit.session_state["current_page"] + 1 < total_pages:
             streamlit.session_state["current_page"] += 1
+            streamlit.session_state.scroll_top = True
             streamlit.rerun()
