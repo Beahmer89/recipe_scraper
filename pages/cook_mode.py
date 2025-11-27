@@ -2,7 +2,7 @@ import streamlit
 import fake_db
 
 params = streamlit.query_params
-recipe_id = params.get("recipe_id")
+recipe_id = params.get("recipe_id") or streamlit.session_state.get("recipe_id")
 
 _, center, _ = streamlit.columns([2, 2, 2])
 with center:
@@ -13,14 +13,6 @@ if not recipe_id:
     streamlit.error(
         "(╯°□°）╯︵ ┻━┻ Where’s the recipe?! Go pick one from View Recipes to enter Cook Mode"
     )
-    _, center, _ = streamlit.columns([2, 2, 2])
-    with center:
-        streamlit.page_link(
-            "pages/view_recipes.py",
-            help="Pick a recipe from list to view in Cook Mode",
-            label="View Recipes",
-            icon="⬅️",
-        )
     streamlit.stop()
 
 # get recipe
@@ -30,14 +22,6 @@ if not len(content["recipe_html"]):
     streamlit.error(
         "(╥﹏╥) Recipe not found. Try viewing the recipe in Cook Mode Again (╥﹏╥)"
     )
-    _, center, _ = streamlit.columns([2, 2, 2])
-    with center:
-        streamlit.page_link(
-            "pages/view_recipes.py",
-            help="Pick a recipe from list to view in Cook Mode",
-            label="View Recipes",
-            icon="⬅️",
-        )
     streamlit.stop()
 
 # Otherwise render the cooking screen
@@ -83,9 +67,3 @@ styled_html = f"""
 
 # Render recipe taking full width
 streamlit.components.v1.html(styled_html, height=1500, scrolling=True)
-
-# Spacer before link
-streamlit.markdown("<br><br>", unsafe_allow_html=True)
-
-# Back link at bottom
-streamlit.page_link("pages/view_recipes.py", label="← Back to list", icon="⬅️")

@@ -48,6 +48,7 @@ streamlit.markdown(
     unsafe_allow_html=True,
 )
 
+
 # --- Define Button Functions ---
 def clear_search():
     # Reset the text input
@@ -158,7 +159,7 @@ for i in range(0, len(filtered_recipes), columns_per_row):
                     key=f"meal_plan_{recipe['id']}",
                     type="secondary",
                     on_click=lambda recipe=recipe: add_to_meal_plan(recipe),
-                    icon="📅"
+                    icon="📅",
                 )
 
             with button_right:
