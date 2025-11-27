@@ -5,7 +5,9 @@ CONNECTION = duckdb.connect(database="./my-db.duckdb")
 
 
 def main():
-    CONNECTION.execute("CREATE SEQUENCE IF NOT EXISTS recipes_id_seq START 1 INCREMENT 1;")
+    CONNECTION.execute(
+        "CREATE SEQUENCE IF NOT EXISTS recipes_id_seq START 1 INCREMENT 1;"
+    )
     # create a table
     CONNECTION.execute(
         """CREATE TABLE IF NOT EXISTS recipes (
@@ -19,8 +21,12 @@ def main():
         """
     )
 
-    CONNECTION.execute("CREATE SEQUENCE IF NOT EXISTS meal_plan_id_seq START 1 INCREMENT 1;")
-    CONNECTION.execute("CREATE SEQUENCE IF NOT EXISTS meal_plan_recipe_id_seq START 1 INCREMENT 1;")
+    CONNECTION.execute(
+        "CREATE SEQUENCE IF NOT EXISTS meal_plan_id_seq START 1 INCREMENT 1;"
+    )
+    CONNECTION.execute(
+        "CREATE SEQUENCE IF NOT EXISTS meal_plan_recipe_id_seq START 1 INCREMENT 1;"
+    )
 
     CONNECTION.execute(
         """CREATE TABLE IF NOT EXISTS meal_plan(
