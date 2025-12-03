@@ -40,13 +40,20 @@ def main():
     )
 
     CONNECTION.execute(
-        """CREATE TABLE IF NOT EXISTS recipe_meal_plan(
+        """CREATE TABLE IF NOT EXISTS meal_plan_recipes(
         id INTEGER PRIMARY KEY DEFAULT(nextval('meal_plan_recipe_id_seq')),
         meal_plan_id INTEGER REFERENCES meal_plan,
         recipe_id INTEGER REFERENCES recipes,
         assigned_day TEXT,
         recipe_type TEXT
         )
+        """
+    )
+
+    CONNECTION.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS meal_plan_recipe_unique_idx
+        ON meal_plan_recipes(assigned_day, recipe_type);
         """
     )
 
