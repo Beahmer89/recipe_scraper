@@ -23,7 +23,7 @@ streamlit.session_state.setdefault("dialog_id", None)
 # search recipes
 streamlit.session_state.setdefault("search_query", "")
 # meal planning
-streamlit.session_state.setdefault("meal_plan_staging", [])
+streamlit.session_state.setdefault("recipes_to_assign", {})
 
 # --- Styling Classes ---
 streamlit.markdown(
@@ -65,8 +65,11 @@ def regenerate(recipe_id):
 
 
 def add_to_meal_plan(recipe):
-    if recipe not in streamlit.session_state["meal_plan_staging"]:
-        streamlit.session_state["meal_plan_staging"].append(recipe)
+    if recipe["id"] not in streamlit.session_state["recipes_to_assign"]:
+        streamlit.session_state["recipes_to_assign"][recipe["id"]] = {
+            "id": recipe["id"],
+            "title": recipe["title"],
+        }
         streamlit.toast(f"Added '{recipe['title']}' to meal planner!")
     else:
         streamlit.toast(f"'{recipe['title']}' is already in your meal plan.")
