@@ -90,3 +90,53 @@ def delete_recipe_by_id(recipe_id: int):
     ).fetchnumpy()
 
     return fetch_result
+
+
+def get_current_meal_plan():
+    fetch_result = CONNECTION.sql(
+        """SELECT mp.id as meal_plan_id, r.*, mpr.assigned_day, mpr.recipe_type
+        FROM meal_plan mp
+        INNER JOIN meal_plan_recipes mpr ON mp.id = mpr.meal_plan_id
+        INNER JOIN recipes r ON mpr.recipe_id = r.id
+        WHERE mp.status = 'current';""",
+    ).fetchnumpy()
+
+    result = [
+        {
+            "meal_plan_id": int(fetch_result["meal_plan_id"][i]),
+            "id": int(fetch_result["id"][i]),
+            "url": str(fetch_result["url"][i]),
+            "title": str(fetch_result["title"][i]),
+            "assigned_day": str(fetch_result["assigned_day"][i]),
+            "recipe_type": str(fetch_result["recipe_type"][i]),
+        }
+        for i in range(len(fetch_result["id"]))
+    ]
+
+    return result
+
+
+def save_meal_plan(current_meal_plan, meal_plan_id=None):
+    if not meal_plan_id:
+        name = "NEW Meal Plan"
+        return_value = CONNECTION.execute(
+            """INSERT INTO meal_plan (name, status, created_at, updated_at)
+            VALUES(?, 'current', NOW() AT TIME ZONE 'UTC', NOW() AT TIME ZONE 'UTC') RETURNING id;""",
+            [name],
+        ).fetchone()
+        meal_plan_id = return_value[0]
+
+    for day, meal_types in current_meal_plan.items():
+        for meal_type, recipe_info in meal_types.items():
+            recipe_id = recipe_info["id"]
+            CONNECTION.execute(
+                """INSERT INTO meal_plan_recipes(meal_plan_id, recipe_id, assigned_day, recipe_type)
+                VALUES(?, ?, ?, ?)
+                ON CONFLICT (assigned_day, recipe_type)
+                DO UPDATE SET
+                    meal_plan_id=EXCLUDED.meal_plan_id,
+                    recipe_id=EXCLUDED.recipe_id;""",
+                [meal_plan_id, recipe_id, day, meal_type],
+            )
+
+    return meal_plan_id
