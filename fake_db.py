@@ -1,6 +1,8 @@
 from db_setup import CONNECTION
 import logging
 
+import streamlit
+
 LOGGER = logging.getLogger()
 logging.basicConfig(level="INFO")
 
@@ -92,7 +94,9 @@ def delete_recipe_by_id(recipe_id: int):
     return fetch_result
 
 
+@streamlit.cache_data
 def get_current_meal_plan():
+    LOGGER.info("Query executing")
     fetch_result = CONNECTION.sql(
         """SELECT mp.id as meal_plan_id, r.*, mpr.assigned_day, mpr.recipe_type
         FROM meal_plan mp
@@ -113,7 +117,17 @@ def get_current_meal_plan():
         for i in range(len(fetch_result["id"]))
     ]
 
+    LOGGER.info("Query done")
     return result
+
+
+def complete_meal_plan(meal_plan_id):
+    CONNECTION.execute(
+        """UPDATE meal_plan SET status = 'complete',
+        updated_at = (NOW() AT TIME ZONE 'UTC')
+        WHERE id = ?  """,
+        [meal_plan_id],
+    )
 
 
 def save_meal_plan(current_meal_plan, meal_plan_id=None):

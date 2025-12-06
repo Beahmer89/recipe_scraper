@@ -44,10 +44,36 @@ def save_meal_plan():
             streamlit.session_state["meal_plan_schedule"],
             meal_plan_id,
         )
+
     streamlit.session_state["meal_plan_schedule"] = DAYS.copy()
     streamlit.session_state["updated_meal_plan_schedule"] = {}
+    fake_db.get_current_meal_plan.clear()
 
 
+@streamlit.dialog(title="Complete Meal Plan")
+def complete_meal_plan():
+    streamlit.write("Completing will give you a **new** meal plan from scratch.")
+    streamlit.write("Is this what you want?")
+    meal_plan_id = streamlit.session_state["current_meal_plan_id"]
+    option_yes, option_no = streamlit.columns(2)
+    with option_yes:
+        if streamlit.button("Yes", type="primary"):
+            LOGGER.info(f"Clearing session for: {meal_plan_id}")
+            streamlit.session_state["current_meal_plan_id"] = 0
+            streamlit.session_state["meal_plan_schedule"] = DAYS.copy()
+            streamlit.session_state["updated_meal_plan_schedule"] = {}
+            streamlit.session_state["recipes_to_assign"] = {}
+            LOGGER.info(f"Completing meal plan: {meal_plan_id}")
+            fake_db.complete_meal_plan(meal_plan_id)
+            fake_db.get_current_meal_plan.clear()
+            streamlit.rerun()
+
+    with option_no:
+        if streamlit.button("No", type="secondary"):
+            streamlit.rerun()
+
+
+#### Get the most recent meal_plan that is in current status
 current_meal_plan = fake_db.get_current_meal_plan()
 LOGGER.info(f"Current items in mealplan {len(current_meal_plan)}")
 
@@ -163,12 +189,13 @@ with save:
         key="meal_plan_save",
         on_click=save_meal_plan,
         type="primary",
+        disabled=(not streamlit.session_state["updated_meal_plan_schedule"]),
     )
 
 with complete:
     streamlit.button(
         "Complete Meal Plan",
         key="meal_plan_complete",
-        #on_click=save_meal_plan,
+        on_click=complete_meal_plan,
         type="secondary",
     )
