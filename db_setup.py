@@ -52,8 +52,14 @@ def main():
 
     CONNECTION.execute(
         """
+        DROP INDEX IF EXISTS meal_plan_recipe_unique_idx;
+        """
+    )
+
+    CONNECTION.execute(
+        """
         CREATE UNIQUE INDEX IF NOT EXISTS meal_plan_recipe_unique_idx
-        ON meal_plan_recipes(assigned_day, recipe_type);
+        ON meal_plan_recipes(meal_plan_id, assigned_day, recipe_type);
         """
     )
 
