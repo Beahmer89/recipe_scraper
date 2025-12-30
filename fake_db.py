@@ -146,11 +146,18 @@ def save_meal_plan(current_meal_plan, meal_plan_id=None):
             CONNECTION.execute(
                 """INSERT INTO meal_plan_recipes(meal_plan_id, recipe_id, assigned_day, recipe_type)
                 VALUES(?, ?, ?, ?)
-                ON CONFLICT (assigned_day, recipe_type)
+                ON CONFLICT (meal_plan_id, assigned_day, recipe_type)
                 DO UPDATE SET
-                    meal_plan_id=EXCLUDED.meal_plan_id,
                     recipe_id=EXCLUDED.recipe_id;""",
                 [meal_plan_id, recipe_id, day, meal_type],
             )
 
     return meal_plan_id
+
+
+def delete_recipe_from_meal_plan_by_id(recipe_id: int, meal_plan_id: int):
+    CONNECTION.execute(
+        """DELETE FROM meal_plan_recipes
+        WHERE recipe_id = ? and meal_plan_id = ?;""",
+        [recipe_id, meal_plan_id],
+    )

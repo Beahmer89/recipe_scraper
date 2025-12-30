@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 
 import streamlit
@@ -29,8 +30,28 @@ streamlit.session_state.setdefault("current_meal_plan_id", 0)
 # Button definitions
 def remove_meal_from_staging(recipe_id):
     # Delete selection in schedule grid
+    meal_plan_id = streamlit.session_state["current_meal_plan_id"]
+    title = streamlit.session_state["recipes_to_assign"][recipe_id]["title"]
+    LOGGER.info(f"Deleting {title} ID: {recipe_id} from meal plan: {meal_plan_id}")
+    # Delete from session which affects assign recipes section
     del streamlit.session_state["recipes_to_assign"][recipe_id]
-    streamlit.toast(f"Deleted {recipe['title']}")
+    # Delete from database
+    fake_db.delete_recipe_from_meal_plan_by_id(recipe_id, meal_plan_id)
+    fake_db.get_current_meal_plan.clear()
+
+    # Delete from updated_meal_plan_schedule
+    schedule = streamlit.session_state["updated_meal_plan_schedule"]
+    meals_to_delete = defaultdict(list)
+    for day, meals in schedule.items():
+        for meal, recipe in meals.items():
+            if recipe["id"] == recipe_id:
+                meals_to_delete[day].append(meal)
+
+    for day, meals in meals_to_delete.items():
+        for meal in meals:
+            del streamlit.session_state["updated_meal_plan_schedule"][day][meal]
+
+    streamlit.toast(f"Deleted {title}")
 
 
 def save_meal_plan():
@@ -76,6 +97,9 @@ def complete_meal_plan():
 #### Get the most recent meal_plan that is in current status
 current_meal_plan = fake_db.get_current_meal_plan()
 LOGGER.info(f"Current items in mealplan {len(current_meal_plan)}")
+
+# Clear and reset session state before repopulating from database
+streamlit.session_state["meal_plan_schedule"] = DAYS.copy()
 
 # staging to meal_plan logic
 if not current_meal_plan and not streamlit.session_state["recipes_to_assign"]:
