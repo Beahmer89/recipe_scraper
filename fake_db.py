@@ -155,6 +155,19 @@ def save_meal_plan(current_meal_plan, meal_plan_id=None):
     return meal_plan_id
 
 
+def get_meal_plan_recipes_by_id(meal_plan_id):
+    fetch_result = CONNECTION.execute(
+        """SELECT r.recipe_html
+        FROM meal_plan mp
+        INNER JOIN meal_plan_recipes mpr ON mp.id = mpr.meal_plan_id
+        INNER JOIN recipes r ON mpr.recipe_id = r.id
+        WHERE mp.id = ?""",
+        [meal_plan_id],
+    ).fetchnumpy()
+
+    return fetch_result
+
+
 def delete_recipe_from_meal_plan_by_id(recipe_id: int, meal_plan_id: int):
     CONNECTION.execute(
         """DELETE FROM meal_plan_recipes
