@@ -94,7 +94,7 @@ def delete_recipe_by_id(recipe_id: int):
     return fetch_result
 
 
-@streamlit.cache_data
+@streamlit.cache_resource
 def get_current_meal_plan():
     LOGGER.info("Query executing")
     fetch_result = CONNECTION.sql(
