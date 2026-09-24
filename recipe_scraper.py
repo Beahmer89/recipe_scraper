@@ -4,27 +4,22 @@ import json
 from bs4 import BeautifulSoup
 import httpx
 
+from curl_cffi import requests as cffi_requests
 import jinja_helper
 
 
 LOGGER = logging.getLogger()
 logging.basicConfig(level="INFO")
+session = cffi_requests.Session(impersonate="chrome120")
 
 
 def get_recipe(url: str) -> str:
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    }
     try:
-        with httpx.Client() as client:
-            response = client.get(url, headers=headers)
-            response.raise_for_status()
-    except (httpx.HTTPStatusError, httpx.RequestError, httpx.ConnectError) as error:
+        response = session.get(url, timeout=15)
+        response.raise_for_status()
+    except Exception as error:
         LOGGER.error("INVALID URL: %s ERROR: %s", url, error)
         return ""
-
     return response.text
 
 
