@@ -2,7 +2,6 @@ import logging
 import json
 
 from bs4 import BeautifulSoup
-import httpx
 
 from curl_cffi import requests as cffi_requests
 import jinja_helper
